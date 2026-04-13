@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reestruturação da Engenharia | Libbs</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+
+    body {
+        font-family: 'Open Sans', sans-serif;
+        background-color: #f4f7f6;
+        background-image: radial-gradient(#d1d8e0 0.8px, transparent 0.8px);
+        background-size: 20px 20px;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        overflow-x: auto;
+        min-height: 100vh;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        padding: 15px 40px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        border-bottom: 3px solid #23C02E;
+    }
+
+    /* Estilização do Logo SVG para garantir o carregamento */
+    .logo-container {
+        height: 35px;
+        margin-right: 25px;
+        display: flex;
+        align-items: center;
+    }
+
+    .header-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #4a76c6;
+        border-left: 2px solid #ddd;
+        padding-left: 25px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .legend {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        padding: 18px 22px;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        z-index: 100;
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+
+    .legend-title { font-weight: 700; font-size: 12px; margin-bottom: 12px; color: #888; text-transform: uppercase; letter-spacing: 1.2px; }
+    .legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+    .legend-color { width: 14px; height: 14px; border-radius: 4px; margin-right: 12px; }
+
+    .content-wrapper { padding: 80px 50px; display: flex; justify-content: flex-start; }
+    ul.tree { list-style: none; padding-left: 60px; position: relative; margin: 0; display: flex; flex-direction: column; justify-content: center; }
+    ul.tree.main-tree { padding-left: 0; }
+
+    ul.tree-children {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transform: translateX(-20px);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    ul.tree-children.open { max-height: 2000px; opacity: 1; transform: translateX(0); overflow: visible; }
+    ul.tree li { display: flex; align-items: center; position: relative; padding: 12px 0; }
+
+    ul.tree:not(.main-tree) > li::before { content: ''; position: absolute; top: 50%; left: -60px; width: 60px; border-top: 2px solid #cbd5e0; z-index: 0; }
+    ul.tree:not(.main-tree) > li::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60px; border-left: 2px solid #cbd5e0; z-index: 0; }
+    ul.tree:not(.main-tree) > li:first-child::after { top: 50%; }
+    ul.tree:not(.main-tree) > li:last-child::after { bottom: 50%; height: auto; }
+    ul.tree:not(.main-tree) > li:only-child::after { display: none; }
+
+    .node {
+        padding: 14px 22px;
+        border-radius: 12px;
+        color: #fff;
+        font-size: 14px;
+        line-height: 1.4;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        max-width: 320px;
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .node:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
+    .node.has-children { cursor: pointer; }
+    .node.has-children::after {
+        content: '+';
+        position: absolute;
+        right: -12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #fff;
+        color: #333;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        border: 1px solid #eee;
+    }
+    .node.has-children:not(.collapsed)::after { content: '-'; }
+
+    .bg-blue { background-color: #4a76c6; }
+    .bg-red { background-color: #ef4c39; }
+    .bg-green { background-color: #27a659; font-size: 13px; font-weight: 500; }
+    .bg-dark-blue { background-color: #001cd2; }
+</style>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo-container">
+        <svg viewBox="0 0 100 30" width="100" height="30">
+            <text x="0" y="22" font-family="Open Sans, sans-serif" font-weight="900" font-size="24" fill="#23C02E">Libbs</text>
+        </svg>
+    </div>
+    <div class="header-title">Reestruturação da Engenharia</div>
+</header>
+
+<div class="legend">
+    <div class="legend-title">Legenda</div>
+    <div class="legend-item"><div class="legend-color" style="background-color: #4a76c6;"></div>Projeto / Gestão</div>
+    <div class="legend-item"><div class="legend-color" style="background-color: #ef4c39;"></div>Desafio</div>
+    <div class="legend-item"><div class="legend-color" style="background-color: #27a659;"></div>Solução Proposta</div>
+</div>
+
+<div class="content-wrapper">
+    <div class="mindmap-container">
+        <ul class="tree main-tree">
+            <li>
+                <div class="node bg-blue">Melhoria de Processos e Reestruturação da Engenharia</div>
+                <ul class="tree tree-children">
+                    <li>
+                        <div class="node bg-red">Erros de projeto identificados na execução</div>
+                        <ul class="tree tree-children">
+                            <li>
+                                <div class="node bg-red">Contratação com projetos imaturos</div>
+                                <ul class="tree tree-children">
+                                    <li><div class="node bg-green">Definição de critérios formais de liberação</div></li>
+                                    <li><div class="node bg-green">Congelamento de escopo pré-contratação</div></li>
+                                    <li><div class="node bg-green">Processo de exceção com a presidência</div></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <div class="node bg-red">Lacunas na gestão de projetos</div>
+                                <ul class="tree tree-children">
+                                    <li><div class="node bg-green">Revisão técnica por fase</div></li>
+                                    <li><div class="node bg-green">Avaliação integrada das disciplinas</div></li>
+                                    <li><div class="node bg-green">Banco de dados de lições aprendidas</div></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <div class="node bg-red">Ausência de revisão interna por disciplina</div>
+                                <ul class="tree tree-children">
+                                    <li><div class="node bg-green">Criação de célula de validação técnica por disciplina</div></li>
+                                    <li><div class="node bg-green">Definição de papéis</div></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <div class="node bg-red">Fragilidade técnica</div>
+                                <ul class="tree tree-children">
+                                    <li><div class="node bg-green">Validação prévia dos profissionais</div></li>
+                                    <li><div class="node bg-green">Controle de estabilidade da equipe externa</div></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <div class="node bg-red">Modelo de contratação</div>
+                                <ul class="tree tree-children">
+                                    <li><div class="node bg-green">Criação de cláusulas contratuais para qualidade dos projetistas</div></li>
+                                    <li><div class="node bg-green">Formalização da responsabilidade sobre os quantitativos</div></li>
+                                    <li><div class="node bg-green">Inclusão de novos documentos para licitação da execução</div></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="node bg-blue">Gestão de desvios</div>
+                        <ul class="tree tree-children">
+                            <li><div class="node bg-blue">Tolerância de até 10% (faixa controlada)</div></li>
+                            <li><div class="node bg-blue">Acima de 10%: análise estruturada (5W2H)</div></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="node bg-dark-blue">Ações complementares</div>
+                        <ul class="tree tree-children">
+                            <li><div class="node bg-dark-blue">IA na análise de vulnerabilidades documentais e no suporte à equalização técnica de propostas.</div></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('.node').forEach(node => {
+            const childrenList = node.nextElementSibling;
+            if (childrenList && childrenList.tagName === 'UL') {
+                node.classList.add('has-children', 'collapsed');
+                node.addEventListener('click', () => {
+                    const isOpen = childrenList.classList.contains('open');
+                    childrenList.classList.toggle('open', !isOpen);
+                    node.classList.toggle('collapsed', isOpen);
+                });
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
